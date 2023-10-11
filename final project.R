@@ -112,6 +112,18 @@ dat_us_2019 <- search_us_2019$data$patents %>%
 dat_us_2019$assignee_organization <- dat_us_2019$assignee_organization %>%
   standardize_magerman()
 
+
+
+
+
+
+
+
+
+
+
+
+
 automotive = sdc_data %>% filter(status == "Completed/Signed",
                     #type == "Strategic Alliance",
                     date_announced > "2010-01-01",
@@ -123,9 +135,20 @@ automotive = sdc_data %>% filter(status == "Completed/Signed",
   select(participants, date_announced, type, SIC_primary,
          participant_nation, deal_number)
 
+automotive
+
 alliance_codes = automotive$deal_number
 alliance_codes
+
 automotive_deals = sdc_data[sdc_data$deal_number %in% alliance_codes,]
+unique(automotive_deals$SIC_primary)
+unique(automotive$SIC_primary)
+#automotive_deals=automotive
+sort(table(automotive_deals$SIC_primary))
+
+
+automotive_deals = sdc_data[sdc_data$deal_number %in% alliance_codes&sdc_data$SIC_primary %in% c(3711, 3714, 7372, 3537, 5012,7375,4911,3674,3751),]
+
 
 automotive_deals$participants <- automotive_deals$participants %>%
   standardize_magerman()
@@ -166,3 +189,4 @@ interactive_graph <- forceNetwork(Links = automotive_deals_net_d3$links,
 interactive_graph
 
 V(automotive_deals_graph)$name
+
