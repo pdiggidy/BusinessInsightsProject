@@ -8,15 +8,16 @@ library(tidyr) #this package is needed for quickly subsetting the data
 #install.packages("devtools")
 #devtools::install_github("stasvlasov/nstandr")
 library(nstandr)
-install.packages("networkD3")
+#install.packages("networkD3")
 library(networkD3)
 sdc_data <- readRDS("SDC_data_2021.rds")
+sdc_data = sdc_data[sdc_data$deal_number %in% alliance_codes&sdc_data$SIC_primary %in% c(3711, 3714, 3537, 5012,3751),]
 
 automotive = sdc_data %>% filter(status == "Completed/Signed",
                                  #type == "Strategic Alliance",
                                  date_announced > "2010-01-01",
                                  date_announced < "2022-12-31",
-                                 #articipant_nation == "United States",
+                                 #participant_nation == "United States",
                                  business_description %like% "%automotive%"|business_description %like% "vehicle"| business_description %like% "auto parts",
                                  
 ) %>%
@@ -69,18 +70,20 @@ V(automotive_deals_graph)$name
 
 #volkswagen
 
-# Assuming your "volkswagen" node is identified by its name, replace "Volkswagen" with the actual name.
-target_node_name <- "Volkswagen"
+target_node_name <- "VOLKSWAGEN"
 
 # Find the index of the "volkswagen" node in the graph
-target_node_index <- which(V(automotive_deals_graph)$participants == target_node_name)
+target_node_index <- which(V(automotive_deals_graph)$name == target_node_name)
 
-# Perform a breadth-first search starting from the "volkswagen" node
-# to identify all connected nodes.
-connected_nodes <- bfs(automotive_deals_graph, root = target_node_index, order = TRUE)$order
+# Find the connected components in the graph
+components <- clusters(automotive_deals_graph)
 
-# Create a subgraph containing only the "volkswagen" network
-subgraph <- induced_subgraph(automotive_deals_graph, vids = connected_nodes)
+
+# Extract the nodes in the component containing "volkswagen"
+nodes_in_connected_component <- which(components$membership == 4)
+
+# Create a subgraph containing only the nodes in the connected component
+subgraph <- induced_subgraph(automotive_deals_graph, vids = nodes_in_connected_component)
 
 # Plot the subgraph
 plot(subgraph, layout = coords, vertex.color = "coral2",
@@ -104,3 +107,37 @@ interactive_subgraph <- forceNetwork(Links = subgraph_net_d3$links,
 
 interactive_subgraph
 
+# Calculate degree centrality
+degree_centrality <- degree(subgraph)
+
+# Calculate betweenness centrality
+betweenness_centrality <- betweenness(subgraph)
+
+# Calculate closeness centrality
+closeness_centrality <- closeness(subgraph)
+
+# Calculate eigenvector centrality
+eigenvector_centrality <- eigen_centrality(subgraph)
+
+# Create a dataframe with the node names and their centrality measures
+centrality_df <- data.frame(
+  Node = V(subgraph)$name,
+  DegreeCentrality = degree_centrality,
+  BetweennessCentrality = betweenness_centrality,
+  ClosenessCentrality = closeness_centrality,
+  EigenvectorCentrality = eigenvector_centrality$vector
+)
+
+print(centrality_df)
+centrality_df$ClosenessCentrality
+order(centrality_df$DegreeCentrality)
+
+write.csv(centrality_df, "centrality.csv")
+
+shortlist = read.csv("companies.csv", header = FALSE)
+
+
+plot(subgraph,layout = coords, vertex.color = "coral2",
+     vertex.size = 1, edge.width = 0.002,
+     edge.color = adjustcolor("black", alpha.f = 0.1),
+     vertex.label = V(subgraph)$name, vertex.label.cex = 0.01)
